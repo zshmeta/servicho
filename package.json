@@ -12,7 +12,7 @@
     "ws": "^8.13.0"
   },
   "scripts": {
-    "servicho": "node ./index.js"
+    "servicho": "node ./index.cjs"
   },
   "bin": {
     "servicho": "./src/servicho.js"
