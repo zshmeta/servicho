@@ -149,11 +149,11 @@ server.listen(HTTP_PORT, () => {
   for (let netInterface of Object.values(networkInterfaces)) {
     for (let networkInterface of netInterface) {
       if (!networkInterface.internal && networkInterface.family === 'IPv4') {
-        console.log(chalk.green(`Served on  ${networkInterface.address}: ${HTTP_PORT}`));        
+        console.log(chalk.green(`Served on  ${networkInterface.address}:${HTTP_PORT}`));        
       }
     }
   }
-  console.log(chalk.green(`available on: http://${hostname:HTTP_PORT}`));
+  console.log(chalk.green(`available on: http://${hostname}:${HTTP_PORT}`));
   console.log(chalk.green('Press Ctrl+C to stop the server'));
 });
 
