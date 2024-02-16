@@ -69,6 +69,8 @@ const requestHandler = async function (req, res) {
 
 async function serveStaticPageIfExists(route, res, folderPath) {
   try {
+    // Normmalize the route to remove leading slashes for path.join to work correctly.
+    const normalizedRoute = route.startsWith('/') ? route.substring(1) : route;
     // Get the full path for the file or directory at the specified route.
     const fullPath = path.join(folderPath, '.' + route);
     // Check if the file exists.
@@ -89,7 +91,8 @@ async function serveStaticPageIfExists(route, res, folderPath) {
       } else if (stats.isFile()) {
         // If the route is a file, read the file and serve it up.
         res.writeHead(200);
-        let file = await fs.promises.readFile(fullPath);
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        let file = await fs.promises.readFile(fullPath, 'utf-8');
         if (route.endsWith('.html')) {
           // If the file is an HTML file, inject the client-side WebSocket code.
           file = `${file.toString()}\n\n<script>${CLIENT_WEBSOCKET_CODE}</script>`;
