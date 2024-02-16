@@ -9,6 +9,7 @@ import chokidar from 'chokidar';
 import chalk from 'chalk';
 import { findAvailablePorts } from './config.js';
 import setupFileWatcher from './setupFileWatcher.js';
+import os from 'os';
 
 
 
@@ -141,9 +142,18 @@ function serveReactComponentPreview(fullPath, res, watchDirectory) {
 // Create an HTTP server instance and start listening on the HTTP port
 const server = http.createServer(requestHandler);
 server.listen(HTTP_PORT, () => {
-  console.log(chalk.green(`Server is listening on http://localhost:${HTTP_PORT}`));
-  console.log(chalk.green(`WebSocket server is listening on ws://localhost:${WEBSOCKET_PORT}`));
+  const hostname = os.hostname();
+  const networkInterfaces = os.networkInterfaces();
+  // Get the IP address
   console.log(chalk.green(`Serving files from ${watchDirectory}`));
+  for (let netInterface of Object.values(networkInterfaces)) {
+    for (let networkInterface of netInterface) {
+      if (!networkInterface.internal && networkInterface.family === 'IPv4') {
+        console.log(chalk.green(`Served on  ${networkInterface.address}: ${HTTP_PORT}`));        
+      }
+    }
+  }
+  console.log(chalk.green(`available on: http://${hostname:HTTP_PORT}`));
   console.log(chalk.green('Press Ctrl+C to stop the server'));
 });
 
