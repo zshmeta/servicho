@@ -1,5 +1,7 @@
 import chokidar from 'chokidar';
 import WebSocket from 'ws';
+import { WebSocketPort } from './config.js';
+import os from 'os';
 
 function setupFileWatcher(watchDirectory, wss) {
     const watcher = chokidar.watch(watchDirectory, {

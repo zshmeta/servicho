@@ -12,6 +12,8 @@ import setupFileWatcher from './setupFileWatcher.js';
 import os from 'os';
 
 
+// Get the hostname
+const hostname = os.hostname();
 
 async function servicho() {
   const { HTTP_PORT, WEBSOCKET_PORT } = await findAvailablePorts();
@@ -20,7 +22,7 @@ async function servicho() {
 
 const CLIENT_WEBSOCKET_CODE = `
   (function() {
-    const socket = new WebSocket('ws://localhost:${WEBSOCKET_PORT}');
+    const socket = new WebSocket('ws://${hostname}:${WEBSOCKET_PORT}');
     socket.onmessage = function(event) {
       if (event.data === 'refresh') {
         window.location.reload();
@@ -168,7 +170,6 @@ function serveReactComponentPreview(fullPath, res, watchDirectory) {
 // Create an HTTP server instance and start listening on the HTTP port
 const server = http.createServer(requestHandler);
 server.listen(HTTP_PORT, () => {
-  const hostname = os.hostname();
   const networkInterfaces = os.networkInterfaces();
   // Get the IP address
   console.log(chalk.green(`Serving files from ${watchDirectory}`));
