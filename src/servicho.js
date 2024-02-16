@@ -3,7 +3,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import glob from 'glob';
+import{ glob } from 'glob';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
@@ -31,21 +31,23 @@ const CLIENT_WEBSOCKET_CODE = `
    // Setup WebSocket server
     const wss = new WebSocketServer({ port: WEBSOCKET_PORT });
 
-    // Setup file watcher
+    // Setup file watcher and paths
     setupFileWatcher(watchDirectory, wss);
+    
+
+
 
 
 const requestHandler = async function (req, res) {
-    const route = req.url;
-    const fullPath = path.join(process.cwd(), route);
+     const servedFile = req.url === '/' ? '/index.html' : req.url;
+    const fullPath = path.join(watchDirectory, servedFile);
 
     try {
         // Attempt to serve HTML file if it exists.
-        if (route.endsWith('.html') && await serveStaticPageIfExists(route, res, process.cwd())) {
+        if (servedFile.endsWith('.html') && await serveStaticPageIfExists(fullPath, res, process.cwd())) {
             return;
-        } else if (isReactComponent(route)) {
-            // Serve React component preview if the request is for a JSX/JS file
-            serveReactComponentPreview(fullPath, res, WEBSOCKET_PORT);
+        } else if ((servedFile.endsWith('.jsx') || servedFile.endsWith('.js') && await serveReactComponentPreview(fullPath, res, process.cwd))){
+
             return;
         }
     } catch (err) {
@@ -54,26 +56,23 @@ const requestHandler = async function (req, res) {
         return;
     }
 
-    // If no matching route is found, send a 404 response.
+    // If no matching servedFile is found, send a 404 response.
     res.writeHead(404).end('Not Found');
 };
 
 
 
 /** Use classic server-logic to serve a static file (e.g. default to 'index.html' etc)
- * @param {string} route
+ * @param {string} servedFile
  * @param {http.ServerResponse} res
- * @param {string} folderPath
+ * @param {string} watchDirectory
  * @returns {Promise<boolean>} Whether or not the page exists and was served
  */
 
 
-async function serveStaticPageIfExists(route, res, folderPath) {
+async function serveStaticPageIfExists(fullPath, res, watchDirectory) {
   try {
-    // Normmalize the route to remove leading slashes for path.join to work correctly.
-    const normalizedRoute = route.startsWith('/') ? route.substring(1) : route;
-    // Get the full path for the file or directory at the specified route.
-    const fullPath = path.join(watchDirectory, '*.html');
+
     // Check if the file exists.
     const fileExists = await fs.promises
       .access(fullPath, fs.constants.F_OK)
@@ -82,17 +81,17 @@ async function serveStaticPageIfExists(route, res, folderPath) {
     if (fileExists) {
             const stats = await fs.promises.stat(fullPath);
             if (stats.isDirectory()) {
-                // Recursively serve 'index.html' if the route is a directory.
+                // Recursively serve 'index.html' if the servedFile is a directory.
                 const indexPath = path.join(fullPath, 'index.html');
                 return serveStaticPageIfExists('/index.html', res, fullPath);
             } else if (stats.isFile()) {
                 res.writeHead(200, {'Content-Type': 'text/html'}); // Ensure correct content type.
-                let file = await fs.promises.readFile(fullPath, 'utf8');
+                let fileContent = await fs.promises.readFile(fullPath, 'utf8');
                 if (fullPath.endsWith('.html')) {
                     // Inject the WebSocket client code only for HTML files.
-                    file += `\n<script>${CLIENT_WEBSOCKET_CODE}</script>`;
+                    fileContent += `\n<script>${CLIENT_WEBSOCKET_CODE}</script>`;
                 }
-                res.end(file);
+                res.end(fileContent);
                 return true;
             }
         }
@@ -105,25 +104,15 @@ async function serveStaticPageIfExists(route, res, folderPath) {
     return false;
 }
 
-/** Determine if the route is for a React component
- * @param {string} route
- * @returns {boolean}
- */
-
-function isReactComponent(route) {
-  return route.endsWith('.js') || route.endsWith('.jsx');
-}
-
 /** Serve React component preview
  * @param {string} componentPath
  * @param {http.ServerResponse} res
  */
 
 
-function serveReactComponentPreview(componentPath, res) {
-  // Convert server file path to web-accessible path
-  const webPath = componentPath.replace(process.cwd(), '').replace(/\\/g, '/');
-  const scriptSrc = `${webPath.startsWith('/') ? '' : '/'}${webPath}`;
+function serveReactComponentPreview(fullPath, res, watchDirectory) {
+  // check if the file can be rendered
+
 
   const previewHtml = `
 <!DOCTYPE html>
@@ -154,7 +143,7 @@ const server = http.createServer(requestHandler);
 server.listen(HTTP_PORT, () => {
   console.log(chalk.green(`Server is listening on http://localhost:${HTTP_PORT}`));
   console.log(chalk.green(`WebSocket server is listening on ws://localhost:${WEBSOCKET_PORT}`));
-  console.log(chalk.green(`Watching directory: ${watchDirectory}`));
+  console.log(chalk.green(`Serving files from ${watchDirectory}`));
   console.log(chalk.green('Press Ctrl+C to stop the server'));
 });
 

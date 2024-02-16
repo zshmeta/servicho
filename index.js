@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import servicho from './src/servicho.mjs';
+import servicho from './src/servicho.js';
 import chalk from 'chalk';
 
 
