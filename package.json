@@ -1,6 +1,6 @@
 {
   "name": "servicho",
-  "version": "1.3.18",
+  "version": "1.3.19",
   "description": "Serve a local folder for local web dev",
   "main": "site",
   "repository": "https://git.zshmeta.dev/servicho",
