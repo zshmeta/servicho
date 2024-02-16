@@ -12,7 +12,8 @@ const HTTP_PORT = 13000;
 const WEBSOCKET_PORT = 13001;
 const config = require('./config.json');
 
-module.exports = function servicho() {
+
+const servicho = () => {
 
 // Read the client-side WebSocket code from file
 const CLIENT_WEBSOCKET_CODE = fs.readFileSync(
@@ -142,3 +143,5 @@ watcher.on('error', (error) => {
   console.error('Error occurred while watching files:', error);
 });
 }
+
+servicho();
