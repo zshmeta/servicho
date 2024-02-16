@@ -113,7 +113,14 @@ async function serveStaticPageIfExists(fullPath, res, watchDirectory) {
 
 function serveReactComponentPreview(fullPath, res, watchDirectory) {
   // check if the file can be rendered
+  if (!fullPath.endsWith('.jsx') && !fullPath.endsWith('.js')) {
+    return false;
+  }
 
+  // Get the script source
+  const scriptSrc = path.relative(watchDirectory, fullPath);
+
+  // Create the HTML preview
 
   const previewHtml = `
 <!DOCTYPE html>
