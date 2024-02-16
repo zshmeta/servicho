@@ -1,60 +1,61 @@
-#! /usr/bin/env node
-
-// Import required modules
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const WebSocket = require('ws');
-const chokidar = require('chokidar');
-
-// Set the HTTP and WebSocket ports
-const HTTP_PORT = 13000;
-const WEBSOCKET_PORT = 13001;
-const config = require('./config.json');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { WebSocketServer }  from 'ws';
+import chokidar from 'chokidar';
+import chalk from 'chalk';
+import { findAvailablePorts } from './config.js';
+import setupFileWatcher from './setupFileWatcher.js';
 
 
-const servicho = () => {
 
-// Read the client-side WebSocket code from file
-const CLIENT_WEBSOCKET_CODE = fs.readFileSync(
-  path.join(__dirname, 'websocket-client.js'),
-  'utf8',
-);
+async function servicho() {
+  const { HTTP_PORT, WEBSOCKET_PORT } = await findAvailablePorts();
+  const watchDirectory = process.argv[2] || process.cwd();
 
-// Websocket server (for allowing browser and dev server to have 2-way communication)
-// We don't even need to do anything except create the instance!
-// Create the WebSocket server
-const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
 
-// Watch for file changes in the 'public' folder
-const watcher = require('./file-watcher.js')(config.watchDirectory, wss);
-
-// Create the request handler
-const requestHandler = async function (req, res) {
-  const method = req.method.toLowerCase();
-  if (method === 'get') {
-    const route = req.url;
-    if (isReactComponent(route)) {
-      // Serve React component preview
-      serveReactComponentPreview(route, res);
-      return;
-    }
-    try {
-      // Serve static files (including HTML files)
-      if (await serveStaticPageIfExists(route, res, process.cwd())) {
-        return;
+const CLIENT_WEBSOCKET_CODE = `
+  (function() {
+    const socket = new WebSocket('ws://localhost:${WEBSOCKET_PORT}');
+    socket.onmessage = function(event) {
+      if (event.data === 'refresh') {
+        window.location.reload();
       }
+    };
+  })();
+`;
+
+   // Setup WebSocket server
+    const wss = new WebSocketServer({ port: WEBSOCKET_PORT });
+
+    // Setup file watcher
+    setupFileWatcher(watchDirectory, wss);
+
+
+const requestHandler = async function (req, res) {
+    const route = req.url;
+    const fullPath = path.join(process.cwd(), route);
+
+    try {
+        // Attempt to serve HTML file if it exists.
+        if (route.endsWith('.html') && await serveStaticPageIfExists(route, res, process.cwd())) {
+            return;
+        } else if (isReactComponent(route)) {
+            // Serve React component preview if the request is for a JSX/JS file
+            serveReactComponentPreview(fullPath, res, WEBSOCKET_PORT);
+            return;
+        }
     } catch (err) {
-      console.error(err);
-      res.writeHead(500);
-      res.end();
-      return;
+        console.error(err);
+        res.writeHead(500).end('Internal Server Error');
+        return;
     }
-  }
-  // If no matching route is found, send a 404 response.
-  res.writeHead(404);
-  res.end();
+
+    // If no matching route is found, send a 404 response.
+    res.writeHead(404).end('Not Found');
 };
+
+
 
 /** Use classic server-logic to serve a static file (e.g. default to 'index.html' etc)
  * @param {string} route
@@ -62,6 +63,8 @@ const requestHandler = async function (req, res) {
  * @param {string} folderPath
  * @returns {Promise<boolean>} Whether or not the page exists and was served
  */
+
+
 async function serveStaticPageIfExists(route, res, folderPath) {
   try {
     // Get the full path for the file or directory at the specified route.
@@ -104,6 +107,7 @@ async function serveStaticPageIfExists(route, res, folderPath) {
  * @param {string} route
  * @returns {boolean}
  */
+
 function isReactComponent(route) {
   return route.endsWith('.js') || route.endsWith('.jsx');
 }
@@ -112,36 +116,65 @@ function isReactComponent(route) {
  * @param {string} componentPath
  * @param {http.ServerResponse} res
  */
+
+
 function serveReactComponentPreview(componentPath, res) {
-  const previewHtmlPath = './app';
-  let previewHtml = fs.readFileSync(previewHtmlPath, 'utf8');
-  previewHtml = previewHtml.replace('/*REACT_COMPONENT_PATH*/', JSON.stringify(componentPath));
+  // Convert server file path to web-accessible path
+  const webPath = componentPath.replace(process.cwd(), '').replace(/\\/g, '/');
+  const scriptSrc = `${webPath.startsWith('/') ? '' : '/'}${webPath}`;
+
+  const previewHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Component Preview</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module">
+      import React from 'react';
+      import ReactDOM from 'react-dom';
+      import Component from '${scriptSrc}';
+      ReactDOM.render(React.createElement(Component, null), document.getElementById('root'));
+    </script>
+</body>
+</html>
+  `;
+
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(previewHtml);
 }
 
+
 // Create an HTTP server instance and start listening on the HTTP port
 const server = http.createServer(requestHandler);
 server.listen(HTTP_PORT, () => {
-  console.log(`Server running on http://localhost:${HTTP_PORT}`);
+  console.log(chalk.green(`Server is listening on http://localhost:${HTTP_PORT}`));
+  console.log(chalk.green(`WebSocket server is listening on ws://localhost:${WEBSOCKET_PORT}`));
+  console.log(chalk.green(`Watching directory: ${watchDirectory}`));
+  console.log(chalk.green('Press Ctrl+C to stop the server'));
 });
 
 // Handle server errors
 server.on('error', (err) => {
   console.error(err);
-  console.log('Error occurred');
+  process.exit(1);
+  console.log(chalk.red('Server error:', err)); 
 });
 
-watcher.on('change', (filePath) => {
-  console.log(`File '${filePath}' modified. Refreshing page...`);
+setupFileWatcher('change', (filePath) => {
+  console.log(chalk.green(`File ${filePath} has been changed`));
   wss.clients.forEach((client) => {
     client.send('refresh');
   });
 });
 
-watcher.on('error', (error) => {
-  console.error('Error occurred while watching files:', error);
+setupFileWatcher('error', (error) => {
+  console.log(chalk.red('Watcher error:', error));
+  process.exit(1);
 });
 }
 
-servicho();
+export default servicho;
+

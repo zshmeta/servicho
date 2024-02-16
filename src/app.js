@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
 
-const PreviewApp = ({ componentPath }) => {
-  const [Component, setComponent] = useState(null);
 
-  useEffect(() => {
-    import(componentPath)
-      .then(module => setComponent(() => module.default))
-      .catch(err => console.error(err));
-  }, [componentPath]);
+function loadComponent(componentPath) {
+  import(componentPath)
+    .then(module => {
+      const Component = module.default;
+      const root = document.getElementById('root');
+      ReactDOM.render(React.createElement(Component), root);
+    })
+    .catch(err => console.error('Loading component failed:', err));
+}
 
-  return (
-    <div>
-      {Component ? <Component /> : <p>Loading component...</p>}
-    </div>
-  );
-};
+const componentPath = process.argv[2] || process.cwd();
 
-// Assuming the component path is passed via a global variable
-ReactDOM.render(
-  <PreviewApp componentPath={window.REACT_COMPONENT_PATH} />,
-  document.getElementById('root')
-);
+const previewHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Component Preview</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    const componentPath = '${componentPath}';
+    ${loadComponent.toString()}
+    loadComponent(componentPath);
+  </script>
+</body>
+</html>
+`;
+res.send(previewHtml);

@@ -1,3 +1,0 @@
-const servicho = require('./src/servicho');
-
-servicho();
