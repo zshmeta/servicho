@@ -1,5 +1,12 @@
+import { WebSocketPort } from './config.js';
+import { WebSocket } from 'ws';
+import os from 'os';
 
-const socketUrl = `ws://localhost:${WebSocketPort}`;
+// Get the hostname
+
+const hostname = os.hostname();
+
+const socketUrl = `ws://${hostname}:${WebSocketPort}`;
 
 (function() {
     let socket = new WebSocket(socketUrl);
