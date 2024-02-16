@@ -79,33 +79,29 @@ async function serveStaticPageIfExists(route, res, folderPath) {
       .then(() => true)
       .catch(() => false);
     if (fileExists) {
-      // Get the stats for the file or directory.
-      const stats = await fs.promises.stat(fullPath);
-      if (stats.isDirectory()) {
-        // If the route is a directory, serve up the 'index.html' file.
-        return await serveStaticPageIfExists(
-          path.join(route, 'index.html'),
-          res,
-          folderPath
-        );
-      } else if (stats.isFile()) {
-        // If the route is a file, read the file and serve it up.
-        res.writeHead(200);
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        let file = await fs.promises.readFile(fullPath, 'utf-8');
-        if (route.endsWith('.html')) {
-          // If the file is an HTML file, inject the client-side WebSocket code.
-          file = `${file.toString()}\n\n<script>${CLIENT_WEBSOCKET_CODE}</script>`;
+            const stats = await fs.promises.stat(fullPath);
+            if (stats.isDirectory()) {
+                // Recursively serve 'index.html' if the route is a directory.
+                const indexPath = path.join(fullPath, 'index.html');
+                return serveStaticPageIfExists('/index.html', res, fullPath);
+            } else if (stats.isFile()) {
+                res.writeHead(200, {'Content-Type': 'text/html'}); // Ensure correct content type.
+                let file = await fs.promises.readFile(fullPath, 'utf8');
+                if (fullPath.endsWith('.html')) {
+                    // Inject the WebSocket client code only for HTML files.
+                    file += `\n<script>${CLIENT_WEBSOCKET_CODE}</script>`;
+                }
+                res.end(file);
+                return true;
+            }
         }
-        res.end(file);
-        return true;
-      }
+    } catch (err) {
+        console.error(err);
+        res.writeHead(500).end('Internal Server Error');
     }
-  } catch (err) {
-    console.error(err);
-  }
-  // If the file doesn't exist or any other error occurs, return false.
-  return false;
+
+    // If the file doesn't exist or any other error occurs, return false.
+    return false;
 }
 
 /** Determine if the route is for a React component
