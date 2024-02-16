@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import servicho from './src/servicho.mjs';
 import chalk from 'chalk';
 
