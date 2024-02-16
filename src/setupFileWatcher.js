@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import WebSocket from 'ws'; // Needed to check the client's readyState
+import WebSocket from 'ws';
 
 function setupFileWatcher(watchDirectory, wss) {
     const watcher = chokidar.watch(watchDirectory, {

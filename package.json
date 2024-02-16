@@ -8,10 +8,10 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "servicho": "node index.mjs"
+    "servicho": "node index.js"
   },
   "scripts": {
-    "servicho": "node index.mjs"
+    "servicho": "node index.js"
   },
   "dependencies": {
     "chalk": "^5.3.0",

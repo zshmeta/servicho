@@ -1,4 +1,3 @@
-// config.js
 import net from 'net';
 
 async function findAvailablePorts() {

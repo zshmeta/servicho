@@ -1,7 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { WebSocketServer }  from 'ws';
+import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
 import { findAvailablePorts } from './config.js';
@@ -176,5 +176,5 @@ setupFileWatcher('error', (error) => {
 });
 }
 
-export default servicho;
 
+export default servicho;
