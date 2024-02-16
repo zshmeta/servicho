@@ -3,6 +3,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import glob from 'glob';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
@@ -72,7 +73,7 @@ async function serveStaticPageIfExists(route, res, folderPath) {
     // Normmalize the route to remove leading slashes for path.join to work correctly.
     const normalizedRoute = route.startsWith('/') ? route.substring(1) : route;
     // Get the full path for the file or directory at the specified route.
-    const fullPath = path.join(folderPath, '.' + route);
+    const fullPath = path.join(watchDirectory, '*.html');
     // Check if the file exists.
     const fileExists = await fs.promises
       .access(fullPath, fs.constants.F_OK)
