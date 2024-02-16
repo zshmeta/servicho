@@ -74,6 +74,25 @@ const requestHandler = async function (req, res) {
 async function serveStaticPageIfExists(fullPath, res, watchDirectory) {
   try {
 
+    // Get the content type based on the file extension.
+    const contentType = {
+      '.html': 'text/html',
+      '.css': 'text/css',
+      '.js': 'text/javascript',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.wav': 'audio/wav',
+      '.mp4': 'video/mp4',
+      '.woff': 'application/font-woff',
+      '.ttf': 'application/font-ttf',
+      '.eot': 'application/vnd.ms-fontobject',
+      '.otf': 'application/font-otf',
+      '.wasm': 'application/wasm',
+    }[path.extname(fullPath)] || 'application/octet-stream';
+
     // Check if the file exists.
     const fileExists = await fs.promises
       .access(fullPath, fs.constants.F_OK)
@@ -86,7 +105,7 @@ async function serveStaticPageIfExists(fullPath, res, watchDirectory) {
                 const indexPath = path.join(fullPath, 'index.html');
                 return serveStaticPageIfExists('/index.html', res, fullPath);
             } else if (stats.isFile()) {
-                res.writeHead(200, {'Content-Type': 'text/html'}); // Ensure correct content type.
+                res.writeHead(200, {'Content-Type': contentType}); 
                 let fileContent = await fs.promises.readFile(fullPath, 'utf8');
                 if (fullPath.endsWith('.html')) {
                     // Inject the WebSocket client code only for HTML files.
