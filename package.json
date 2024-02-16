@@ -12,9 +12,9 @@
     "ws": "^8.13.0"
   },
   "scripts": {
-    "start": "./site/dev-serve.js"
+    "servicho": "node ./index.js"
   },
   "bin": {
-    "servicho": "./site/dev-serve.js"
+    "servicho": "./index.js"
   }
 }
