@@ -1,4 +1,4 @@
-import { WebSocketPort } from './config.js';
+import  WebSocketPort  from './config.js';
 import { WebSocket } from 'ws';
 import os from 'os';
 
