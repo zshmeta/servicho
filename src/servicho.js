@@ -45,9 +45,9 @@ const requestHandler = async function (req, res) {
 
     try {
         // Attempt to serve HTML file if it exists.
-        if (servedFile.endsWith('.html') && await serveStaticPageIfExists(fullPath, res, process.cwd())) {
+        if (await serveStaticPageIfExists(fullPath, res, watchDirectory)) {
             return;
-        } else if ((servedFile.endsWith('.jsx') || servedFile.endsWith('.js') && await serveReactComponentPreview(fullPath, res, process.cwd))){
+        } else if ((servedFile.endsWith('.jsx') || servedFile.endsWith('.js') && await serveReactComponentPreview(fullPath, res, watchDirectory))){
 
             return;
         }
