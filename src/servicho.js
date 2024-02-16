@@ -7,7 +7,7 @@ import{ glob } from 'glob';
 import { WebSocketServer } from 'ws';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
-import { findAvailablePorts } from './config.js';
+import  findAvailablePorts  from './config.js';
 import setupFileWatcher from './setupFileWatcher.js';
 import os from 'os';
 
